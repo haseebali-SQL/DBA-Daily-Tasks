@@ -1,13 +1,10 @@
-# DBA-Space-Tasks
+# DBA-Daily-Tasks
 
-#Check Space for EachDB on Server
+-- Database Level space Info
+-- Multi DB
+-- Server-level Space Info
+-- Job Schedules info
+-- Specific Job complete info with execution history
+-- Automated jobs information on Email using Database mailing
 
-EXEC sp_MSforeachdb 
-'USE [?];
-SELECT
-    DB_NAME() AS DatabaseName,
-    CONVERT(DECIMAL(10,2), SUM(size) * 8 / 1024) AS TotalSizeMB,
-    CONVERT(DECIMAL(10,2), SUM(FILEPROPERTY(name, ''SpaceUsed'')) * 8 / 1024) AS UsedSpaceMB,
-    CONVERT(DECIMAL(10,2), (SUM(size) - SUM(FILEPROPERTY(name, ''SpaceUsed''))) * 8 / 1024) AS FreeSpaceMB
-FROM sys.database_files
-GROUP BY type_desc;';
+
