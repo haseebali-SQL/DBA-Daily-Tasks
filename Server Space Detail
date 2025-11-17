@@ -1,0 +1,12 @@
+-- Detail of space on server
+
+
+SELECT 
+    vs.volume_mount_point AS Drive,
+    CAST(vs.total_bytes / 1024.0 / 1024 / 1024 AS DECIMAL(10,2)) AS Total_GB,
+    CAST(vs.available_bytes / 1024.0 / 1024 / 1024 AS DECIMAL(10,2)) AS Free_GB,
+    CAST(vs.available_bytes * 100.0 / vs.total_bytes AS DECIMAL(5,2)) AS Percent_Free
+FROM sys.master_files AS f
+CROSS APPLY sys.dm_os_volume_stats(f.database_id, f.file_id) AS vs
+GROUP BY vs.volume_mount_point, vs.total_bytes, vs.available_bytes
+ORDER BY vs.volume_mount_point;
