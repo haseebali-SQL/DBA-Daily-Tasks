@@ -1,0 +1,53 @@
+-- Shrink TempDB
+
+
+USE tempdb;
+GO
+ 
+-- Show current file info
+SELECT 
+    name AS [FileName],
+    physical_name AS [FilePath],
+    size/128 AS [CurrentSize_MB],
+    CAST(FILEPROPERTY(name, 'SpaceUsed') AS int)/128 AS [Used_MB],
+    (size/128 - CAST(FILEPROPERTY(name, 'SpaceUsed') AS int)/128) AS [Free_MB]
+FROM sys.database_files;
+GO
+ 
+ 
+ PRINT 'Flush dirty pages to disk and clear caches'
+  
+CHECKPOINT;
+DBCC FREEPROCCACHE;
+DBCC FREESYSTEMCACHE ('ALL');
+DBCC FREESESSIONCACHE;
+GO
+ 
+ 
+ PRINT 'Shrinking all tempdb data and log files';
+  
+-- Perform shrink with target sizes (adjust if needed)
+USE tempdb;
+GO
+DBCC SHRINKFILE (tempdev, 10240);   -- main MDF to 10 GB
+DBCC SHRINKFILE (tempdev1, 10240);  -- NDF #1 to 10 GB
+DBCC SHRINKFILE (tempdev2, 10240);  -- NDF #2 to 10 GB
+DBCC SHRINKFILE (tempdev3, 10240);  -- NDF #3 to 10 GB
+DBCC SHRINKFILE (templog, 2048);    -- LDF to 2 GB
+GO
+ 
+ 
+ PRINT 'Final CHECKPOINT and verification after shrink';
+  
+CHECKPOINT;
+GO
+ 
+-- Show post-shrink file info
+SELECT 
+    name AS [FileName],
+    physical_name AS [FilePath],
+    size/128 AS [FinalSize_MB],
+    CAST(FILEPROPERTY(name, 'SpaceUsed') AS int)/128 AS [Used_MB],
+    (size/128 - CAST(FILEPROPERTY(name, 'SpaceUsed') AS int)/128) AS [Free_MB]
+FROM sys.database_files;
+GO
