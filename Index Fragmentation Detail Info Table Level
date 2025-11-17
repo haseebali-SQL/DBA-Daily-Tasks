@@ -1,0 +1,20 @@
+-- Check Index Fragmentation
+
+SELECT
+    i.name AS IndexName,
+    i.type_desc AS IndexType,
+    ips.index_id,
+    ips.page_count,
+    ips.avg_fragmentation_in_percent AS FragPercent,
+    CASE 
+        WHEN ips.avg_fragmentation_in_percent > 30 THEN 'HIGH (Rebuild Recommended)'
+        WHEN ips.avg_fragmentation_in_percent > 10 THEN 'MEDIUM (Reorganize Recommended)'
+        ELSE 'LOW (OK)'
+    END AS FragmentationStatus,
+    ips.alloc_unit_type_desc AS AllocationType
+FROM sys.dm_db_index_physical_stats(DB_ID(),OBJECT_ID('TableName'), NULL, NULL,       
+        'DETAILED'        -- LIMITED(Fast) | SAMPLED | DETAILED (Most Accurate)
+     ) ips
+INNER JOIN sys.indexes i 
+       ON ips.object_id = i.object_id AND ips.index_id = i.index_id
+ORDER BY FragPercent DESC
