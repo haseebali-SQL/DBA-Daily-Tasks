@@ -1,0 +1,48 @@
+-- Find Job Schedules Info
+
+
+USE msdb;
+GO
+ 
+SELECT  
+    j.[name] AS [JobName],
+    s.[name] AS [ScheduleName],
+ 
+    CASE s.freq_type
+        WHEN 1 THEN 'One Time'
+        WHEN 4 THEN 'Daily'
+        WHEN 8 THEN 'Weekly'
+        WHEN 16 THEN 'Monthly'
+        WHEN 32 THEN 'Monthly (relative)'
+        WHEN 64 THEN 'When SQL Agent starts'
+        WHEN 128 THEN 'When CPU idle'
+        ELSE 'Other'
+    END AS [ScheduleType],
+    STUFF(
+        (CASE WHEN s.freq_interval & 1  <> 0 THEN ', Sunday'    ELSE '' END) +
+        (CASE WHEN s.freq_interval & 2  <> 0 THEN ', Monday'    ELSE '' END) +
+        (CASE WHEN s.freq_interval & 4  <> 0 THEN ', Tuesday'   ELSE '' END) +
+        (CASE WHEN s.freq_interval & 8  <> 0 THEN ', Wednesday' ELSE '' END) +
+        (CASE WHEN s.freq_interval & 16 <> 0 THEN ', Thursday'  ELSE '' END) +
+        (CASE WHEN s.freq_interval & 32 <> 0 THEN ', Friday'    ELSE '' END) +
+        (CASE WHEN s.freq_interval & 64 <> 0 THEN ', Saturday'  ELSE '' END),
+        1, 2, ''
+    ) AS [Scheduled_Day],
+ 
+    RIGHT('00' + CAST(s.active_start_time / 10000 AS VARCHAR(2)), 2) + ':' +
+    RIGHT('00' + CAST((s.active_start_time % 10000) / 100 AS VARCHAR(2)), 2) + ':' +
+    RIGHT('00' + CAST(s.active_start_time % 100 AS VARCHAR(2)), 2) AS [Start_Time],
+ 
+    s.freq_recurrence_factor AS [Every_X_Weeks],
+ 
+    CASE s.enabled WHEN 1 THEN 'Enabled' ELSE 'Disabled' END AS [Schedule_Status],
+    CASE j.enabled WHEN 1 THEN 'Enabled' ELSE 'Disabled' END AS [Job_Status],
+ 
+    j.date_created AS [JobCreatedOn],
+    msdb.dbo.agent_datetime(js.next_run_date, js.next_run_time) AS [Next_Run_DateTime]
+FROM dbo.sysjobs AS j
+INNER JOIN dbo.sysjobschedules AS js ON j.job_id = js.job_id
+INNER JOIN dbo.sysschedules AS s ON js.schedule_id = s.schedule_id
+WHERE s.freq_type = 8     And j.enabled = 1          
+  AND s.freq_recurrence_factor = 1 
+ORDER BY [Scheduled_Day], [Start_Time];
