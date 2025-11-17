@@ -1,0 +1,23 @@
+-- DBA-Space-Tasks
+
+
+DECLARE @SQL NVARCHAR(MAX) = N'';
+
+SELECT @SQL = @SQL + '
+USE [' + name + '];
+
+SELECT
+    DB_NAME() AS DatabaseName,
+    ''' + @@SERVERNAME + ''' AS ServerName,
+    mf.type_desc AS FileType,
+    mf.physical_name AS PhysicalFilePath,
+    LEFT(mf.physical_name, 2) AS DriveLetter,
+    CONVERT(DECIMAL(10,2), SUM(mf.size) * 8 / 1024) AS TotalSizeMB,
+    CONVERT(DECIMAL(10,2), SUM(FILEPROPERTY(mf.name, ''SpaceUsed'')) * 8 / 1024) AS UsedSpaceMB,
+    CONVERT(DECIMAL(10,2), (SUM(mf.size) - SUM(FILEPROPERTY(mf.name, ''SpaceUsed''))) * 8 / 1024) AS FreeSpaceMB
+FROM sys.database_files mf
+GROUP BY mf.type_desc, mf.physical_name' 
+FROM sys.databases
+WHERE state_desc = 'ONLINE';
+
+EXEC sp_executesql @SQL;
